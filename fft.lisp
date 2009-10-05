@@ -59,3 +59,35 @@
   (unless inverse
     (shift-samples row))
   row)
+
+(defun make-dst-buf (src dst)
+  (flet ((clone-array (src)
+	   (let ((dims (array-dimensions src)))
+	     (adjust-array (make-array dims
+				       :displaced-to src)
+			   dims)))
+	 (copy-array (src dst)
+	   (let ((size (array-total-size src)))
+	     (let ((src-linear (make-array size :displaced-to src))
+		   (dst-linear (make-array size :displaced-to dst)))
+	       (replace dst-linear src-linear)))))
+    (cond
+      ((eq src dst) dst)
+      ((null dst) (clone-array src))
+      ((equal (array-dimensions src)
+	      (array-dimensions dst)) (copy-array src dst))
+      (t (error "Incompatible source and destination")))))
+
+(defun fft (src &optional dst)
+  (let ((dst (make-dst-buf src dst)))
+    (loop :for row = (virtual-row dst) :then (next-row row)
+       :while row
+       :do (perform-fft row nil))
+    dst))
+
+(defun ifft (src &optional dst)
+  (let ((dst (make-dst-buf src dst)))
+    (loop :for row = (virtual-row dst) :then (next-row row)
+       :while row
+       :do (perform-fft row t))
+    dst))

@@ -1,4 +1,5 @@
 
 (defpackage #:fft
-  (:use "COMMON-LISP"))
-
+  (:use "COMMON-LISP")
+  (:export #:fft
+	   #:ifft))
