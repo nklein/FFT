@@ -9,9 +9,7 @@
 (defun virtual-row (buffer)
   (make-virtual-row :buffer buffer
 		    :dimension 0
-		    :base (mapcar #'(lambda (x)
-				      (declare (ignore x))
-				      0)
+		    :base (mapcar (constantly 0)
 				  (array-dimensions buffer))))
 
 (defun row-length (row)

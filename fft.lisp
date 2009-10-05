@@ -29,6 +29,9 @@
      :do (setf (row-ref row ii) (* scale (row-ref row ii))))
   row)
 
+(deftype small-double-float ()
+  '(double-float #.(- pi) #.pi))
+
 (defun perform-fft (row &optional inverse)
   (assert (zerop (logand (row-length row)
 			 (1- (row-length row)))))
@@ -40,9 +43,9 @@
      :for step = 1 :then (* step 2)
      :while (< step len)
      :do (loop :with delta = (/ angular-scale step)
-	    :with sine = (sin (/ delta 2.0))
+	    :with sine = (sin (the small-double-float (/ delta 2.0)))
 	    :with multiplier = (complex (* -2.0 sine sine)
-					(sin delta))
+					(sin (the small-double-float delta)))
 	    :for factor = (complex 1.0 0.0) :then (+ factor
 						     (* factor multiplier))
 	    :for group :from 0 :below step
