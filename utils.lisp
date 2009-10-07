@@ -11,9 +11,10 @@
   (apply #'array-row-major-index buffer (append pre (list index) post)))
 
 (defun vr-offset-span (buffer pre post)
-  (let ((offset (vr-index buffer pre 0 post)))
+  (let ((offset (vr-index buffer pre 0 post))
+	(len (array-dimension buffer (length pre))))
     (values offset
-	    (- (vr-index buffer pre 1 post) offset))))
+	    (- (vr-index buffer pre (min 1 (1- len)) post) offset))))
 
 (defun vr-aref (buffer pre post)
   (multiple-value-bind (offset span) (vr-offset-span buffer pre post)
