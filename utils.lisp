@@ -92,13 +92,6 @@
 
 (declaim (ftype (function (virtual-row fixnum)
 			  (complex double-float)) row-ref))
-#+not
-(defun row-ref (row index)
-  (declare (type virtual-row row)
-	   (type fixnum index))
-  (with-slots (getter) row
-    (nth-value 0 (funcall getter index))))
-
 (defun row-ref (row index)
   (declare (type virtual-row row)
 	   (type fixnum index))
@@ -106,14 +99,6 @@
 
 (declaim (ftype (function (virtual-row fixnum (complex double-float))
 			  (complex double-float)) set-row-ref))
-#+not
-(defun set-row-ref (row index value)
-  (declare (type virtual-row row)
-	   (type fixnum index)
-	   (type (complex double-float) value))
-  (with-slots (setter) row
-    (nth-value 0 (funcall setter index value))))
-
 (defun set-row-ref (row index value)
   (declare (type virtual-row row)
 	   (type fixnum index)
@@ -126,5 +111,4 @@
 			  (values (or virtual-row null) boolean)) next-row))
 (defun next-row (row)
   (declare (type virtual-row row))
-  (with-slots (next) row
-    (funcall next)))
+  (funcall (virtual-row-next row)))
