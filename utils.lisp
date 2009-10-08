@@ -7,30 +7,19 @@
   setter
   next)
 
-(defun vr-index (buffer pre index post)
-  (apply #'array-row-major-index buffer (append pre (list index) post)))
-
-(defun vr-offset-span (buffer pre post)
-  (let ((offset (vr-index buffer pre 0 post))
-	(len (array-dimension buffer (length pre))))
-    (values offset
-	    (- (vr-index buffer pre (min 1 (1- len)) post) offset))))
-
 (defun vr-aref (buffer pre post)
-  (if (= (length (array-dimensions buffer)) 1)
-      (lambda (index)
-	(aref buffer index))
-      (multiple-value-bind (offset span) (vr-offset-span buffer pre post)
-	(lambda (index)
-	  (row-major-aref buffer (+ (* index span) offset))))))
+  (let ((make-closure
+	   (compile nil `(lambda (buf)
+			   (lambda (index)
+			     (aref buf ,@pre index ,@post))))))
+    (compile nil (funcall make-closure buffer))))
 
 (defun vr-setf-aref (buffer pre post)
-  (if (= (length (array-dimensions buffer)) 1)
-      (lambda (index value)
-	(setf (aref buffer index) value))
-      (multiple-value-bind (offset span) (vr-offset-span buffer pre post)
-	(lambda (index value)
-	  (setf (row-major-aref buffer (+ (* index span) offset)) value)))))
+  (let ((make-closure
+	   (compile nil `(lambda (buf)
+			   (lambda (index value)
+			     (setf (aref buf ,@pre index ,@post) value))))))
+    (compile nil (funcall make-closure buffer))))
 
 (defun vr-next-row (buffer pre post)
   (labels ((inc-pre (buffer pre &optional (index 0))
