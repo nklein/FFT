@@ -16,6 +16,7 @@
 (asdf:operate 'asdf:load-op 'bordeaux-threads :verbose nil)
 (asdf:operate 'asdf:load-op 'pcall :verbose nil)
 (asdf:operate 'asdf:load-op 'pfft :verbose nil)
+(asdf:operate 'asdf:load-op 'bordeaux-fft :verbose nil)
 
 (defun make-random-buffer (dims &optional (random-state *random-state*))
   (let ((ret (make-array dims
@@ -27,18 +28,24 @@
 	(setf (row-major-aref ret ii) (complex (number random-state)
 					       (number random-state)))))))
   
-(defvar *dims* '(512 512))
+(defvar *dims* (list (* 1024 1024)))
 (defparameter *buf* (make-random-buffer *dims*))
 (defparameter *dst* (make-array *dims*
 				:element-type '(complex double-float)
 				:initial-element (complex 0.0d0 0.0d0)))
 
 (time (fft:fft *buf* *dst*))
+(time (bordeaux-fft:fft! *buf* *dst*))
 #-sbcl
 (time (pfft:pfft *buf* *dst*))
 
 #+(and :sbcl :not)
-(sb-sprof:with-profiling (:max-samples 8192
+(sb-sprof:with-profiling (:max-samples 8000
 			  :report :flat
 			  :loop t)
   (fft:fft *buf* *dst*))
+#+(and :sbcl :not)
+(sb-sprof:with-profiling (:max-samples 8000
+			  :report :flat
+			  :loop t)
+  (bordeaux-fft:fft! *buf* *dst*))
