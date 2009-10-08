@@ -8,14 +8,14 @@
 
 (defun perform-parallel-rows (row inverse &optional task-list)
   (when row
-    (multiple-value-bind (next-row advanced) (next-row row)
-      (cond
-	((or advanced (null next-row))
-	     (mapc #'pcall:join task-list)
-	     (perform-parallel-rows next-row inverse))
-	(t (let ((task (pcall:pexec (perform-fft row inverse))))
-	     (let ((task-list (cons task task-list)))
-	       (perform-parallel-rows next-row inverse task-list))))))))
+    (let* ((task (pcall:pexec (perform-fft row inverse)))
+	   (task-list (cons task task-list)))
+      (multiple-value-bind (next-row advanced) (next-row row)
+	(cond
+	  ((or advanced (null next-row))
+	      (mapc #'pcall:join task-list)
+	      (perform-parallel-rows next-row inverse))
+	  (t  (perform-parallel-rows next-row inverse task-list)))))))
 
 (defun pfft (src &optional dst)
   #-thread-support (fft:fft src dst)
