@@ -5,7 +5,7 @@
 
 
 (pushnew #P"/usr/local/asdf-install/site-systems/" asdf:*central-registry*)
-(pushnew #P"/Users/pat/.sbcl/systems/" asdf:*central-registry*)
+(pushnew #P"." asdf:*central-registry*)
 
 (defpackage #:fft-test
   (:use "COMMON-LISP"))
@@ -28,24 +28,27 @@
 	(setf (row-major-aref ret ii) (complex (number random-state)
 					       (number random-state)))))))
   
-(defvar *dims* (list (* 1024 1024)))
+(defvar *dims* (list 262144))
 (defparameter *buf* (make-random-buffer *dims*))
 (defparameter *dst* (make-array *dims*
 				:element-type '(complex double-float)
 				:initial-element (complex 0.0d0 0.0d0)))
 
+;; run once to get the coefficients arrays initialized, then time it
+(fft:fft *buf* *dst*)
 (time (fft:fft *buf* *dst*))
+
+;; run once to get the coefficients arrays initialized, then time it
+(bordeaux-fft:fft! *buf* *dst*)
 (time (bordeaux-fft:fft! *buf* *dst*))
-#-sbcl
+
+;; if we've got threading, then time the parallel version, too.
+#-thread-support
 (time (pfft:pfft *buf* *dst*))
 
+;; maybe we want to do profiling, too... I dunno...
 #+(and :sbcl :not)
 (sb-sprof:with-profiling (:max-samples 8000
 			  :report :flat
 			  :loop t)
   (fft:fft *buf* *dst*))
-#+(and :sbcl :not)
-(sb-sprof:with-profiling (:max-samples 8000
-			  :report :flat
-			  :loop t)
-  (bordeaux-fft:fft! *buf* *dst*))
