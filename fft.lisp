@@ -51,7 +51,9 @@
 	   (type virtual-row row)
 	   (type t inverse))
   (assert (zerop (logand (row-length row)
-			 (1- (row-length row)))))
+			 (1- (row-length row))))
+	  (row)
+	  "Row lenghth must be power of two, but is ~S" (row-length row))
   (when inverse
     (shift-samples row))
   (rearrange-samples row)
