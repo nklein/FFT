@@ -49,7 +49,7 @@
 |#
 
 ;; maybe we want to do profiling, too... I dunno...
-#+(and :sbcl)
+#+(and :sbcl :not)
 (sb-sprof:with-profiling (:max-samples 8000
 			  :report :flat
 			  :loop t)
