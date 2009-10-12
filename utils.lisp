@@ -3,23 +3,32 @@
 
 (defstruct virtual-row
   length
-  getter
-  setter
+  buffer
+  offset
+  span
   next)
+
+(defun vr-offset (buffer pre post &optional (index 0))
+  (apply #'array-row-major-index buffer (append pre (list index) post)))
+
+(defun vr-span (buffer pre post)
+  (- (vr-offset buffer pre post
+		(min 1 (1- (array-dimension buffer (length pre)))))
+     (vr-offset buffer pre post)))
 
 (defun vr-aref (buffer pre post)
   (let ((make-closure
 	   (compile nil `(lambda (buf)
 			   (lambda (index)
 			     (aref buf ,@pre index ,@post))))))
-    (compile nil (funcall make-closure buffer))))
+    (funcall make-closure buffer)))
 
 (defun vr-setf-aref (buffer pre post)
   (let ((make-closure
 	   (compile nil `(lambda (buf)
 			   (lambda (index value)
 			     (setf (aref buf ,@pre index ,@post) value))))))
-    (compile nil (funcall make-closure buffer))))
+    (funcall make-closure buffer)))
 
 (defun vr-next-row (buffer pre post)
   (labels ((inc-pre (buffer pre &optional (index 0))
@@ -65,8 +74,9 @@
 		  (mapcar (constantly 0)
 			  (subseq (array-dimensions buffer) (1+ dimension))))))
     (make-virtual-row :length (array-dimension buffer dimension)
-		      :getter (vr-aref buffer pre post)
-		      :setter (vr-setf-aref buffer pre post)
+		      :buffer buffer
+		      :offset (vr-offset buffer pre post)
+		      :span   (vr-span buffer pre post)
 		      :next   (compile nil
 				       (lambda ()
 					 (multiple-value-bind (new-pre
@@ -91,7 +101,8 @@
 (defun row-ref (row index)
   (declare (type virtual-row row)
 	   (type fixnum index))
-  (nth-value 0 (funcall (virtual-row-getter row) index)))
+  (row-major-aref (virtual-row-buffer row) (+ (* index (virtual-row-span row))
+					      (virtual-row-offset row))))
 
 (declaim (ftype (function (virtual-row fixnum (complex double-float))
 			  (complex double-float)) set-row-ref))
@@ -99,7 +110,9 @@
   (declare (type virtual-row row)
 	   (type fixnum index)
 	   (type (complex double-float) value))
-  (nth-value 0 (funcall (virtual-row-setter row) index value)))
+  (setf (row-major-aref (virtual-row-buffer row)
+			(+ (* index (virtual-row-span row))
+			   (virtual-row-offset row))) value))
 
 (defsetf row-ref set-row-ref)
 

@@ -16,7 +16,6 @@
 (asdf:operate 'asdf:load-op 'bordeaux-threads :verbose nil)
 (asdf:operate 'asdf:load-op 'pcall :verbose nil)
 (asdf:operate 'asdf:load-op 'pfft :verbose nil)
-(asdf:operate 'asdf:load-op 'bordeaux-fft :verbose nil)
 
 (defun make-random-buffer (dims &optional (random-state *random-state*))
   (let ((ret (make-array dims
@@ -28,7 +27,7 @@
 	(setf (row-major-aref ret ii) (complex (number random-state)
 					       (number random-state)))))))
   
-(defvar *dims* (list 262144))
+(defvar *dims* (list 512 512))
 (defparameter *buf* (make-random-buffer *dims*))
 (defparameter *dst* (make-array *dims*
 				:element-type '(complex double-float)
@@ -38,16 +37,19 @@
 (fft:fft *buf* *dst*)
 (time (fft:fft *buf* *dst*))
 
-;; run once to get the coefficients arrays initialized, then time it
-(bordeaux-fft:fft! *buf* *dst*)
-(time (bordeaux-fft:fft! *buf* *dst*))
-
 ;; if we've got threading, then time the parallel version, too.
-#-thread-support
+#+thread-support
 (time (pfft:pfft *buf* *dst*))
 
+#|
+;; run once to get the coefficients arrays initialized, then time it
+(asdf:operate 'asdf:load-op 'bordeaux-fft :verbose nil)
+(bordeaux-fft:fft! *buf* *dst*)
+(time (bordeaux-fft:fft! *buf* *dst*))
+|#
+
 ;; maybe we want to do profiling, too... I dunno...
-#+(and :sbcl :not)
+#+(and :sbcl)
 (sb-sprof:with-profiling (:max-samples 8000
 			  :report :flat
 			  :loop t)
