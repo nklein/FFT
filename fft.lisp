@@ -5,13 +5,13 @@
 
 (defun shift-samples (row)
   (declare (optimize (speed 3))
-	   (type (array (complex double-float) *) row))
+	   (type (simple-array (complex double-float) *) row))
   (let* ((len (length row))
 	 (mid (ash len -1)))
     (declare (type fixnum len mid))
     (dotimes (ii mid row)
       (declare (type fixnum ii))
-      (rotatef (aref row ii) (aref row (+ ii mid))))))
+      (rotatef (aref row ii) (aref row (the fixnum (+ ii mid)))))))
 
 (deftype small-double-float ()
   '(double-float #.(- pi) #.pi))
@@ -53,7 +53,13 @@
   (dotimes (ii (row-length row) array)
     (setf (aref array ii) (row-ref row ii))))
 
+(declaim (ftype (function ((simple-array (complex double-float) *)
+			   virtual-row
+			   &optional double-float) virtual-row) array-to-row))
 (defun array-to-row (array row &optional (scale 1.0d0))
+  (declare (type (simple-array (complex double-float) *) array)
+	   (type virtual-row row)
+	   (type double-float scale))
   (assert (= (row-length row) (length array)))
   (dotimes (ii (row-length row) row)
     (setf (row-ref row ii) (* (aref array ii) scale))))
@@ -75,29 +81,27 @@
 			    out-buf out-index d-buf d-index)
 		 (declare (type (simple-array (complex double-float) *)
 				x-buf out-buf d-buf)
-			  (type fixnum x-index length skip 
-				       out-index d-index)
-			  (optimize (speed 3)))
+			  (type length-type x-index length skip 
+				            out-index d-index)
+			  (optimize (speed 3) (safety 0)))
 		 (cond
 		   ((= length 1) (setf (aref out-buf out-index)
 				       (aref x-buf x-index)))
-		   (t (let* ((half (ash length -1))
+		   (t (let* ((half    (ash length -1))
 			     (2-skips (ash skip 1))
-			     (new-d   (+ d-index half))
-			     (new-x   (+ x-index skip)))
-			(declare (type fixnum half 2-skips new-d new-x))
+			     (new-d   (the length-type (+ d-index half)))
+			     (new-x   (the length-type (+ x-index skip))))
+			(declare (type length-type half 2-skips new-d new-x))
 			(calc x-buf x-index half 2-skips
 			      d-buf new-d   out-buf out-index)
 			(calc x-buf new-x   half 2-skips
 			      d-buf d-index out-buf out-index)
-			(loop :for kk :of-type fixnum
-			   :from 0 :below (/ length 2)
-			   :do (let ((c-index (* kk skip)))
-				 (declare (type fixnum c-index))
-				 (multf (aref d-buf (+ d-index kk))
-				      (aref coeffs c-index))))
-			(loop :for kk :of-type fixnum
-			   :from 0 :below (/ length 2)
+			(loop :for kk :of-type length-type :from 0 :below half
+			   :for c-index :of-type length-type :from 0 :by skip
+			   :for di :of-type fixnum :from d-index
+			   :do (multf (aref d-buf di)
+				      (aref coeffs c-index)))
+			(loop :for kk :of-type fixnum :from 0 :below half
 			   :do (let ((ee (aref d-buf (+ kk d-index half)))
 				     (dd (aref d-buf (+ kk d-index))))
 				 (declare (type (complex double-float) ee dd))
@@ -112,26 +116,27 @@
 	(calc src 0 length 1 dst 0 tmp 0)
 	(unless inverse
 	  (shift-samples dst))
-	(array-to-row dst row (/ (coerce (sqrt length) 'double-float))))))
+	(array-to-row dst row
+		      (the double-float
+			(/ 1.0d0 (coerce (sqrt length) 'double-float)))))))
   row)
 
 (defun make-dst-buf (src dst)
   (declare (optimize (speed 3))
-	   (type array src)
-	   (type (or (array (complex double-float)) null) dst))
+	   (type simple-array src)
+	   (type (or (simple-array (complex double-float)) null) dst))
   (labels ((copy-array (src dst)
-	     (declare (type array src)
-		      (type (array (complex double-float)) dst))
+	     (declare (type simple-array src)
+		      (type (simple-array (complex double-float)) dst))
 	     (let ((size (array-total-size src)))
 	       (dotimes (ii size dst)
 		 (setf (row-major-aref dst ii)
 		       (coerce (row-major-aref src ii)
 			       '(complex double-float))))))
 	   (clone-array (src)
-	     (declare (type array src))
+	     (declare (type simple-array src))
 	     (let ((dst (make-array (array-dimensions src)
-				    :element-type '(complex double-float)
-				    :initial-element (complex 0.0d0 0.0d0))))
+				    :element-type '(complex double-float))))
 	       (copy-array src dst))))
     (cond
       ((null dst) (clone-array src))
