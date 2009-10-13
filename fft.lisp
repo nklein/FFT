@@ -23,8 +23,10 @@
 			(length coeffs))))
     (declare (type double-float direction)
 	     (type (complex double-float) base-angle))
-    (loop :for ii :from 0 :below (length coeffs)
-       :do (setf (aref coeffs ii) (exp (* base-angle ii))))))
+    (loop :with factor = (exp base-angle)
+       :for ii :from 0 :below (length coeffs)
+       :for cc = (complex 1.0d0 0.0d0) :then (* cc factor)
+       :do (setf (aref coeffs ii) cc))))
 
 (defun get-fft-buffers (length inverse)
   (let ((info (if inverse *ifft-info* *fft-info*)))
@@ -36,7 +38,7 @@
 				    :element-type '(complex double-float))
 			(make-array length
 				    :element-type '(complex double-float))
-			(make-array (ash length -1)
+			(make-array (max (ash length -1) 1)
 				    :element-type '(complex double-float)))))
 	(calculate-coefficients (fifth info) inverse)
 	(if inverse
