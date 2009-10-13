@@ -26,20 +26,6 @@
 		(min 1 (1- (array-dimension buffer (length pre)))))
      (vr-offset buffer pre post)))
 
-(defun vr-aref (buffer pre post)
-  (let ((make-closure
-	   (compile nil `(lambda (buf)
-			   (lambda (index)
-			     (aref buf ,@pre index ,@post))))))
-    (funcall make-closure buffer)))
-
-(defun vr-setf-aref (buffer pre post)
-  (let ((make-closure
-	   (compile nil `(lambda (buf)
-			   (lambda (index value)
-			     (setf (aref buf ,@pre index ,@post) value))))))
-    (funcall make-closure buffer)))
-
 (defun vr-next-row (buffer pre post)
   (labels ((inc-pre (buffer pre &optional (index 0))
 	     (cond
