@@ -1,3 +1,5 @@
+ccl-*/
+cmu-*/
 sbcl-*/
 *.fasl
 *.dx32fsl
