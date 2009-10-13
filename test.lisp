@@ -17,6 +17,7 @@
   #-(or :abcl) `(asdf:operate 'asdf:load-op ,package :verbose nil))
 
 (quietly-load 'fft)
+(quietly-load 'bordeaux-fft)
 
 #-(or :abcl (and :clozure :x8632-target) :cmu :ecl)
 (quietly-load 'bordeaux-threads)
@@ -33,31 +34,27 @@
       (dotimes (ii (array-total-size ret) ret)
 	(setf (row-major-aref ret ii) (complex (number random-state)
 					       (number random-state)))))))
-  
-(defvar *dims* (list 512 512))
-(defparameter *buf* (make-random-buffer *dims*))
-(defparameter *dst* (make-array *dims*
-				:element-type '(complex double-float)
-				:initial-element (complex 0.0d0 0.0d0)))
 
-;; run once to get the coefficients arrays initialized, then time it
-(fft:fft *buf* *dst*)
-(time (fft:fft *buf* *dst*))
+(dolist (dims '((1048576) (512 512) (1024 1024) (256 256 64)))
+  (let ((buf (make-random-buffer dims))
+	(dst (make-array dims :element-type '(complex double-float))))
+    (format t "DIMS: ~S~%" dims)
+    ;; run once to get the coefficients arrays initialized, then time it
+    (fft:fft buf dst)
+    (time (fft:fft buf dst))
 
-;; if we've got threading, then time the parallel version, too.
-#+thread-support
-(time (pfft:pfft *buf* *dst*))
+    ;; if we've got threading, then time the parallel version, too.
+    #+thread-support
+    (time (pfft:pfft buf dst))
 
-#|
-;; run once to get the coefficients arrays initialized, then time it
-(asdf:operate 'asdf:load-op 'bordeaux-fft :verbose nil)
-(bordeaux-fft:fft! *buf* *dst*)
-(time (bordeaux-fft:fft! *buf* *dst*))
-|#
+    ;; run once to get the coefficients arrays initialized, then time it
+    (when (= (length dims) 1)
+      (bordeaux-fft:fft! buf dst)
+      (time (bordeaux-fft:fft! buf dst)))
 
-;; maybe we want to do profiling, too... I dunno...
-#+(and :sbcl :not)
-(sb-sprof:with-profiling (:max-samples 8000
-			  :report :flat
-			  :loop t)
-  (fft:fft *buf* *dst*))
+    ;; maybe we want to do profiling, too... I dunno...
+    #+(and :sbcl :not)
+    (sb-sprof:with-profiling (:max-samples 8000
+			      :report :flat
+			      :loop t)
+      (fft:fft buf dst))))
