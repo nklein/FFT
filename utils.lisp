@@ -11,6 +11,10 @@
 				  :element-type '(complex double-float)
 				  :initial-element (complex 0.0d0 0.0d0)))
 
+(defmacro vr-compile (form)
+  #+(or :abcl :clisp :cmu) form
+  #-(or :abcl :clisp :cmu) `(compile nil ,form))
+
 (defstruct virtual-row
   (length 0 :type length-type)
   (buffer *empty-array* :type (simple-array (complex double-float) *))
@@ -73,19 +77,19 @@
 		      :buffer buffer
 		      :offset (vr-offset buffer pre post)
 		      :span   (vr-span buffer pre post)
-		      :next   (compile nil
-				       (lambda ()
-					 (multiple-value-bind (new-pre
-							       new-post
-							       advance)
-					     (vr-next-row buffer pre post)
-					   (when (or new-pre new-post)
-					     (values
-					        (virtual-row buffer
-							     (length new-pre)
-							     new-pre
-							     new-post)
-						advance))))))))
+		      :next   (vr-compile
+			         (lambda ()
+				   (multiple-value-bind (new-pre
+							 new-post
+							 advance)
+				       (vr-next-row buffer pre post)
+				     (when (or new-pre new-post)
+				       (values
+					(virtual-row buffer
+						     (length new-pre)
+						     new-pre
+						     new-post)
+					advance))))))))
 
 (declaim (ftype (function (virtual-row) fixnum) row-length))
 (defun row-length (row)

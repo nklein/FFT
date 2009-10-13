@@ -12,10 +12,17 @@
 
 (in-package :fft-test)
 
-(asdf:operate 'asdf:load-op 'fft :verbose nil)
-(asdf:operate 'asdf:load-op 'bordeaux-threads :verbose nil)
-(asdf:operate 'asdf:load-op 'pcall :verbose nil)
-(asdf:operate 'asdf:load-op 'pfft :verbose nil)
+(defmacro quietly-load (package)
+  #+(or :abcl) `(asdf:operate 'asdf:load-op ,package)
+  #-(or :abcl) `(asdf:operate 'asdf:load-op ,package :verbose nil))
+
+(quietly-load 'fft)
+
+#-(or :abcl (and :clozure :x8632-target) :cmu :ecl)
+(quietly-load 'bordeaux-threads)
+
+#+thread-support (quietly-load 'pcall)
+#+thread-support (quietly-load 'pfft)
 
 (defun make-random-buffer (dims &optional (random-state *random-state*))
   (let ((ret (make-array dims
