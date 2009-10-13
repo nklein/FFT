@@ -1,11 +1,21 @@
 
 (in-package #:fft)
 
+(deftype small-double-float ()
+  '(double-float #.(- pi) #.pi))
+
+(deftype length-type ()
+  '(and fixnum unsigned-byte))
+
+(defvar *empty-array* (make-array '(1)
+				  :element-type '(complex double-float)
+				  :initial-element (complex 0.0d0 0.0d0)))
+
 (defstruct virtual-row
-  length
-  buffer
-  offset
-  span
+  (length 0 :type length-type)
+  (buffer *empty-array* :type (simple-array (complex double-float) *))
+  (offset 0 :type length-type)
+  (span 0 :type length-type)
   next)
 
 (defun vr-offset (buffer pre post &optional (index 0))
@@ -97,18 +107,29 @@
   (virtual-row-length row))
 
 (declaim (ftype (function (virtual-row fixnum)
-			  (complex double-float)) row-ref))
+			  (complex double-float)) row-ref)
+	 (inline row-ref))
 (defun row-ref (row index)
   (declare (type virtual-row row)
-	   (type fixnum index))
-  (row-major-aref (virtual-row-buffer row) (+ (* index (virtual-row-span row))
-					      (virtual-row-offset row))))
+	   (type length-type index)
+	   (optimize (speed 3)))
+  (let ((buffer (virtual-row-buffer row))
+	(span   (virtual-row-span row))
+	(offset (virtual-row-offset row)))
+    (declare (type (simple-array (complex double-float) *) buffer)
+	     (type length-type span offset))
+  (let ((major (the length-type (* index span))))
+    (declare (type length-type major))
+    (the (complex double-float)
+      (row-major-aref buffer
+		      (the length-type (+ major offset)))))))
 
-(declaim (ftype (function (virtual-row fixnum (complex double-float))
-			  (complex double-float)) set-row-ref))
+(declaim (ftype (function (virtual-row length-type (complex double-float))
+			  (complex double-float)) set-row-ref)
+	 (inline set-row-ref))
 (defun set-row-ref (row index value)
   (declare (type virtual-row row)
-	   (type fixnum index)
+	   (type length-type index)
 	   (type (complex double-float) value))
   (setf (row-major-aref (virtual-row-buffer row)
 			(+ (* index (virtual-row-span row))
