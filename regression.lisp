@@ -4,21 +4,22 @@
 
 (pushnew #P"/usr/local/asdf-install/site-systems/" asdf:*central-registry*)
 
-(defmacro quietly-load (package)
+(defmacro load-package (package &optional verbosity)
+  (declare (ignorable verbosity))
   #+(or :abcl) `(asdf:operate 'asdf:load-op ,package)
-  #-(or :abcl) `(asdf:operate 'asdf:load-op ,package :verbose nil))
+  #-(or :abcl) `(asdf:operate 'asdf:load-op ,package :verbose ,verbosity))
 
-(quietly-load 'nst)
+(load-package 'nst)
 
 #-(or :abcl :clisp (and :clozure :x8632-target) :cmu :ecl)
-(quietly-load 'bordeaux-threads)
+(load-package 'bordeaux-threads)
 
-#+thread-support (quietly-load 'pcall)
+#+thread-support (load-package 'pcall)
 
 (pushnew #P"." asdf:*central-registry*)
 
-(quietly-load 'fft)
-#+thread-support (quietly-load 'pfft)
+(load-package 'fft t)
+#+thread-support (load-package 'pfft t)
 
 (defpackage #:regression-test
   (:use "COMMON-LISP"))
