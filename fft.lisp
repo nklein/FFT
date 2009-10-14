@@ -5,7 +5,7 @@
 
 (defun shift-samples (row)
   (declare (optimize (speed 3))
-	   (type (simple-array (complex double-float) *) row))
+	   (type (simple-array (complex double-float) (*)) row))
   (let* ((len (length row))
 	 (mid (ash len -1)))
     (declare (type fixnum len mid))
@@ -17,7 +17,7 @@
 (defvar *ifft-info* nil)
 
 (defun calculate-coefficients (coeffs inverse)
-  (declare (type (simple-array (complex double-float) *) coeffs))
+  (declare (type (simple-array (complex double-float) (*)) coeffs))
   (let* ((direction (if inverse 1.0d0 -1.0d0))
 	 (base-angle (/ (* direction pi (complex 0.0d0 1.0d0))
 			(length coeffs))))
@@ -47,12 +47,13 @@
   (let ((info (if inverse *ifft-info* *fft-info*)))
     (values-list (rest info))))
 
-(declaim (ftype (function (virtual-row (simple-array (complex double-float) *))
-			  (simple-array (complex double-float) *))
+(declaim (ftype (function (virtual-row
+			   (simple-array (complex double-float) (*)))
+			  (simple-array (complex double-float) (*)))
 		row-to-array))
 (defun row-to-array (row array)
   (declare (type virtual-row row)
-	   (type (simple-array (complex double-float) *) array)
+	   (type (simple-array (complex double-float) (*)) array)
 	   (optimize (speed 3)))
   (assert (= (row-length row) (length array)))
   (dotimes (ii (row-length row) array)
@@ -61,11 +62,11 @@
       (declare (type (complex double-float) vv))
       (setf (aref array ii) vv))))
 
-(declaim (ftype (function ((simple-array (complex double-float) *)
+(declaim (ftype (function ((simple-array (complex double-float) (*))
 			   virtual-row
 			   &optional double-float) virtual-row) array-to-row))
 (defun array-to-row (array row &optional (scale 1.0d0))
-  (declare (type (simple-array (complex double-float) *) array)
+  (declare (type (simple-array (complex double-float) (*)) array)
 	   (type virtual-row row)
 	   (type double-float scale)
 	   (optimize (speed 3)))
@@ -87,11 +88,11 @@
 	    "Row length must be power of two, but is ~S" length)
     (multiple-value-bind (src tmp dst coeffs)
 	(get-fft-buffers length inverse)
-      (declare (type (simple-array (complex double-float) *)
+      (declare (type (simple-array (complex double-float) (*))
 		     src tmp dst coeffs))
       (labels ((calc (x-buf x-index length skip
 			    out-buf out-index d-buf d-index)
-		 (declare (type (simple-array (complex double-float) *)
+		 (declare (type (simple-array (complex double-float) (*))
 				x-buf out-buf d-buf)
 			  (type length-type x-index length skip 
 				            out-index d-index)
