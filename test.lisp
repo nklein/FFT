@@ -5,10 +5,10 @@
 
 
 (pushnew #P"/usr/local/asdf-install/site-systems/" asdf:*central-registry*)
-(pushnew #P"." asdf:*central-registry*)
+(pushnew #P"./" asdf:*central-registry*)
 
 (defpackage #:fft-test
-  (:use "COMMON-LISP"))
+  (:use :cl))
 
 (in-package :fft-test)
 

@@ -1,8 +1,8 @@
 
 (defpackage #:pfft
-  (:use "COMMON-LISP")
+  (:use :cl)
   (:export #:pfft #:pifft)
-  (:import-from "FFT" "PERFORM-FFT" "VIRTUAL-ROW" "NEXT-ROW" "MAKE-DST-BUF"))
+  (:import-from :fft :perform-fft :virtual-row :next-row :make-dst-buf))
 
 (in-package #:pfft)
 

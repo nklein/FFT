@@ -22,7 +22,7 @@
 #+thread-support (load-package 'pfft t)
 
 (defpackage #:regression-test
-  (:use "COMMON-LISP"))
+  (:use :cl))
 
 (in-package :regression-test)
 
