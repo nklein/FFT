@@ -2,7 +2,8 @@
 (asdf:defsystem #:fft
     :author "Patrick Stein <pat@nklein.com>"
     :maintainer "Patrick Stein <pat@nklein.com>"
-    :licence "Public Domain"
+    :license "Public Domain"
+    :version "0.1.20110324"
     :components ((:file "package")
 		 (:file "utils"
 			:depends-on ("package"))
